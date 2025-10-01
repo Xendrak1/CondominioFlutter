@@ -24,7 +24,16 @@ final residentStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       reservations.where((r) => r['estado'] == 'CONFIRMADA').length;
   final totalDebt = expenses
       .where((e) => e['estado'] == 'PENDIENTE')
-      .fold<double>(0, (sum, e) => sum + (e['monto'] as num).toDouble());
+      .fold<double>(0, (sum, e) {
+    final monto = e['monto'];
+    double valor = 0.0;
+    if (monto is num) {
+      valor = monto.toDouble();
+    } else if (monto is String) {
+      valor = double.tryParse(monto) ?? 0.0;
+    }
+    return sum + valor;
+  });
 
   return {
     'pending_expenses': pendingExpenses,

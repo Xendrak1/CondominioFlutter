@@ -14,16 +14,29 @@ class PostgresService {
 
   Future<Connection> get connection async {
     if (_connection == null || _connection!.isOpen == false) {
-      _connection = await Connection.open(
-        Endpoint(
-          host: EnvConfig.dbHost,
-          port: EnvConfig.dbPort,
-          database: EnvConfig.dbName,
-          username: EnvConfig.dbUser,
-          password: EnvConfig.dbPassword,
-        ),
-        settings: const ConnectionSettings(sslMode: SslMode.disable),
-      );
+      print('🔌 Conectando a PostgreSQL Azure...');
+      print('   Host: ${EnvConfig.dbHost}');
+      print('   Database: ${EnvConfig.dbName}');
+      print('   User: ${EnvConfig.dbUser}');
+
+      try {
+        _connection = await Connection.open(
+          Endpoint(
+            host: EnvConfig.dbHost,
+            port: EnvConfig.dbPort,
+            database: EnvConfig.dbName,
+            username: EnvConfig.dbUser,
+            password: EnvConfig.dbPassword,
+          ),
+          settings: const ConnectionSettings(
+            sslMode: SslMode.require, // Azure requiere SSL
+          ),
+        );
+        print('✅ Conexión exitosa a PostgreSQL Azure!');
+      } catch (e) {
+        print('❌ Error conectando a PostgreSQL Azure: $e');
+        rethrow;
+      }
     }
     return _connection!;
   }

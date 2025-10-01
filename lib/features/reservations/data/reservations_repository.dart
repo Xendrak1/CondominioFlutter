@@ -1,61 +1,92 @@
+import 'package:postgres/postgres.dart';
+import '../../../core/database/postgres_service.dart';
+
 class ReservationsRepository {
   Future<List<Map<String, dynamic>>> getAreas() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      print('📍 [AREAS] Intentando obtener áreas comunes...');
+      final conn = await PostgresService.instance.connection;
+      print('📍 [AREAS] Conexión obtenida, ejecutando query...');
 
-    return [
-      {'id': 1, 'nombre': 'Piscina', 'requiere_pago': true, 'tarifa': 50.0},
-      {'id': 2, 'nombre': 'Gimnasio', 'requiere_pago': false, 'tarifa': null},
-      {
-        'id': 3,
-        'nombre': 'Parque Infantil',
-        'requiere_pago': false,
-        'tarifa': null
-      },
-      {
-        'id': 4,
-        'nombre': 'Salón de Juegos',
-        'requiere_pago': true,
-        'tarifa': 100.0
-      },
-      {
-        'id': 5,
-        'nombre': 'Terraza/Deck',
-        'requiere_pago': true,
-        'tarifa': 150.0
-      },
-      {'id': 6, 'nombre': 'Área de BBQ', 'requiere_pago': true, 'tarifa': 80.0},
-      {
-        'id': 7,
-        'nombre': 'Cancha de Tenis',
-        'requiere_pago': true,
-        'tarifa': 50.0
-      },
-    ];
+      // Ajustado a la estructura REAL de Azure
+      final results = await conn.execute(
+        'SELECT id, nombre, requiere_pago, tarifa FROM areas_comunes ORDER BY nombre',
+      );
+
+      print(
+          '📍 [AREAS] Query ejecutado exitosamente. Filas: ${results.length}');
+
+      final areas = results.map((row) {
+        return {
+          'id': row[0] as int,
+          'nombre': row[1] as String,
+          'requiere_pago': row[2] as bool,
+          'tarifa': row[3],
+        };
+      }).toList();
+
+      print('📍 [AREAS] Áreas procesadas: ${areas.length}');
+      for (var area in areas) {
+        print('   - ${area['nombre']} (ID: ${area['id']})');
+      }
+
+      return areas;
+    } catch (e, stackTrace) {
+      print('❌ [AREAS] Error obteniendo áreas: $e');
+      print('❌ [AREAS] StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMyReservations() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      print('📅 [RESERVAS] Intentando obtener reservas...');
+      final conn = await PostgresService.instance.connection;
+      print('📅 [RESERVAS] Conexión obtenida, ejecutando query...');
 
-    return [
-      {
-        'id': 1,
-        'codigo': 'R-001',
-        'area_nombre': 'Piscina',
-        'fecha': DateTime(2025, 9, 15),
-        'hora_inicio': '18:00',
-        'hora_fin': '23:00',
-        'estado': 'CONFIRMADA',
-      },
-      {
-        'id': 2,
-        'codigo': 'R-002',
-        'area_nombre': 'Salón de Juegos',
-        'fecha': DateTime(2025, 9, 20),
-        'hora_inicio': '14:00',
-        'hora_fin': '18:00',
-        'estado': 'PENDIENTE',
-      },
-    ];
+      // Ajustado a la estructura REAL de Azure (con persona_id, qr_reserva, etc.)
+      final results = await conn.execute(
+        '''SELECT r.id, r.codigo, ac.nombre as area_nombre, r.fecha, 
+           r.hora_inicio, r.hora_fin, r.estado::text 
+           FROM reservas r 
+           JOIN areas_comunes ac ON r.area_id = ac.id 
+           ORDER BY r.fecha DESC, r.hora_inicio DESC 
+           LIMIT 50''',
+      );
+
+      print(
+          '📅 [RESERVAS] Query ejecutado exitosamente. Filas: ${results.length}');
+
+      final reservas = results.map((row) {
+        // Convertir timestamps a strings de hora (HH:MM)
+        final horaInicio =
+            (row[4] as DateTime).toIso8601String().substring(11, 16);
+        final horaFin =
+            (row[5] as DateTime).toIso8601String().substring(11, 16);
+
+        return {
+          'id': row[0] as int,
+          'codigo': row[1] as String,
+          'area_nombre': row[2] as String,
+          'fecha': row[3] as DateTime,
+          'hora_inicio': horaInicio,
+          'hora_fin': horaFin,
+          'estado': row[6] as String,
+        };
+      }).toList();
+
+      print('📅 [RESERVAS] Reservas procesadas: ${reservas.length}');
+      for (var reserva in reservas) {
+        print(
+            '   - ${reserva['codigo']}: ${reserva['area_nombre']} - ${reserva['estado']}');
+      }
+
+      return reservas;
+    } catch (e, stackTrace) {
+      print('❌ [RESERVAS] Error obteniendo reservas: $e');
+      print('❌ [RESERVAS] StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> createReservation({
@@ -64,17 +95,82 @@ class ReservationsRepository {
     required String horaInicio,
     required String horaFin,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      print('➕ [CREAR RESERVA] Iniciando creación de reserva...');
+      print('   Área ID: $areaId');
+      print('   Fecha: $fecha');
+      print('   Horario: $horaInicio - $horaFin');
 
-    return {
-      'id': DateTime.now().millisecondsSinceEpoch,
-      'codigo': 'R-${DateTime.now().millisecondsSinceEpoch}',
-      'qr_code': 'RESERVA-${DateTime.now().millisecondsSinceEpoch}',
-      'estado': 'CONFIRMADA',
-    };
+      final conn = await PostgresService.instance.connection;
+      print('➕ [CREAR RESERVA] Conexión obtenida');
+
+      // Generar código único
+      final codigo = 'R-${DateTime.now().millisecondsSinceEpoch}';
+      final qrReserva = 'RESERVA-$codigo';
+
+      // Convertir horas a timestamps
+      final horaInicioTimestamp = DateTime(
+          fecha.year,
+          fecha.month,
+          fecha.day,
+          int.parse(horaInicio.split(':')[0]),
+          int.parse(horaInicio.split(':')[1]));
+      final horaFinTimestamp = DateTime(fecha.year, fecha.month, fecha.day,
+          int.parse(horaFin.split(':')[0]), int.parse(horaFin.split(':')[1]));
+
+      print('➕ [CREAR RESERVA] Código generado: $codigo');
+      print('➕ [CREAR RESERVA] Ejecutando INSERT...');
+
+      // Ajustado a la estructura REAL (persona_id, qr_reserva, etc.)
+      // Usar sintaxis PostgreSQL directa sin parámetros nombrados
+      final result = await conn.execute(
+        Sql.named('''INSERT INTO reservas 
+           (codigo, persona_id, area_id, vivienda_id, fecha, 
+            hora_inicio, hora_fin, estado, qr_reserva) 
+           VALUES (@codigo, 1, @area_id, 1, @fecha, @hora_inicio, @hora_fin, 'CONFIRMADA'::reserva_estado, @qr) 
+           RETURNING id'''),
+        parameters: {
+          'codigo': codigo,
+          'area_id': areaId,
+          'fecha': fecha,
+          'hora_inicio': horaInicioTimestamp,
+          'hora_fin': horaFinTimestamp,
+          'qr': qrReserva,
+        },
+      );
+
+      final reservaId = result.first[0] as int;
+      print('✅ [CREAR RESERVA] Reserva creada exitosamente!');
+      print('   ID en BD: $reservaId');
+      print('   Código: $codigo');
+
+      return {
+        'id': reservaId,
+        'codigo': codigo,
+        'qr_code': qrReserva,
+        'estado': 'CONFIRMADA',
+      };
+    } catch (e, stackTrace) {
+      print('❌ [CREAR RESERVA] Error creando reserva: $e');
+      print('❌ [CREAR RESERVA] StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
   Future<void> cancelReservation(int reservationId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      print('🚫 [CANCELAR] Cancelando reserva ID: $reservationId');
+      final conn = await PostgresService.instance.connection;
+      await conn.execute(
+        Sql.named(
+            "UPDATE reservas SET estado = 'CANCELADA'::reserva_estado WHERE id = @id"),
+        parameters: {'id': reservationId},
+      );
+      print('✅ [CANCELAR] Reserva cancelada exitosamente');
+    } catch (e, stackTrace) {
+      print('❌ [CANCELAR] Error cancelando reserva: $e');
+      print('❌ [CANCELAR] StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 }

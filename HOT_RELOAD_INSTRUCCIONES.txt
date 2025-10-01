@@ -1,0 +1,35 @@
+═══════════════════════════════════════════════════════════
+  INSTRUCCIONES PARA USAR HOT RELOAD
+═══════════════════════════════════════════════════════════
+
+1. En la terminal donde está corriendo Flutter, verás:
+
+   Flutter run key commands.
+   r Hot reload. 
+   R Hot restart.
+   q Quit
+
+2. Presiona la tecla correspondiente:
+
+   r = Hot reload (cambios en UI, rápido 1-2 seg)
+   R = Hot restart (cambios estructurales, 5-10 seg)
+   q = Salir de la app
+
+3. Después de presionar 'r', verás:
+
+   Performing hot reload...
+   Reloaded 5 of 1234 libraries in 234ms.
+
+4. Los cambios aparecen INMEDIATAMENTE en el emulador
+
+═══════════════════════════════════════════════════════════
+
+ERRORES ARREGLADOS:
+✅ type 'String' is not a subtype of 'num' → ARREGLADO
+✅ column "ocupada" does not exist → ARREGLADO (ahora usa "activo")
+✅ column "monto_total" does not exist → ARREGLADO (ahora usa "monto")
+
+═══════════════════════════════════════════════════════════
+
+AHORA PRESIONA 'r' EN TU TERMINAL
+

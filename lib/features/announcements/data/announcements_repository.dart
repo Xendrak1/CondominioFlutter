@@ -1,36 +1,62 @@
+import '../../../core/database/postgres_service.dart';
+
 class AnnouncementsRepository {
   Future<List<Map<String, dynamic>>> getAnnouncements() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      print('📢 [COMUNICADOS] Obteniendo comunicados...');
+      final conn = await PostgresService.instance.connection;
 
-    return [
-      {
-        'id': 1,
-        'titulo': 'Mantenimiento de Piscina',
-        'contenido':
-            'Se realizará mantenimiento de la piscina el día 25 de septiembre. La piscina estará cerrada de 8:00 AM a 2:00 PM.',
-        'fecha': DateTime(2025, 9, 20),
-        'leido': false,
-      },
-      {
-        'id': 2,
-        'titulo': 'Reunión de Propietarios',
-        'contenido':
-            'Se convoca a reunión ordinaria de propietarios para el día 30 de septiembre a las 18:00 en el salón de eventos.',
-        'fecha': DateTime(2025, 9, 22),
-        'leido': false,
-      },
-      {
-        'id': 3,
-        'titulo': 'Corte de Agua Programado',
-        'contenido':
-            'El día 28 de septiembre habrá corte de agua de 10:00 AM a 12:00 PM por trabajos de mantenimiento.',
-        'fecha': DateTime(2025, 9, 25),
-        'leido': true,
-      },
-    ];
+      // Estructura real: id, titulo, cuerpo, fecha_publicacion, publico
+      final results = await conn.execute(
+        '''SELECT id, titulo, cuerpo, fecha_publicacion, publico 
+           FROM comunicados 
+           ORDER BY fecha_publicacion DESC 
+           LIMIT 50''',
+      );
+
+      print('📢 [COMUNICADOS] Query ejecutado. Filas: ${results.length}');
+
+      return results.map((row) {
+        return {
+          'id': row[0] as int,
+          'titulo': row[1] as String,
+          'contenido': row[2] as String, // cuerpo → contenido
+          'fecha_publicacion': row[3] as DateTime,
+          'prioridad':
+              _mapPublicoToPrioridad(row[4] as String), // publico → prioridad
+          'leido': false, // Por ahora todos sin leer
+        };
+      }).toList();
+    } catch (e, stackTrace) {
+      print('❌ [COMUNICADOS] Error obteniendo comunicados: $e');
+      print('❌ [COMUNICADOS] StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
-  Future<void> markAsRead(int announcementId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+  String _mapPublicoToPrioridad(String publico) {
+    // Mapear el campo "publico" a "prioridad" para mantener la UI
+    switch (publico) {
+      case 'TODOS':
+        return 'ALTA';
+      case 'RESIDENTES':
+        return 'MEDIA';
+      case 'PROPIETARIOS':
+        return 'MEDIA';
+      case 'GUARDIAS':
+        return 'BAJA';
+      default:
+        return 'MEDIA';
+    }
+  }
+
+  Future<void> markAsRead(int id) async {
+    try {
+      print('✅ [COMUNICADOS] Marcando como leído: $id');
+      // En una implementación real, insertarías en lecturas_comunicado
+      // Por ahora solo log
+    } catch (e) {
+      print('❌ [COMUNICADOS] Error marcando como leído: $e');
+    }
   }
 }

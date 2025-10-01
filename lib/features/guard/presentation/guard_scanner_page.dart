@@ -60,20 +60,21 @@ class _GuardScannerPageState extends ConsumerState<GuardScannerPage>
       final result = await guardRepo.validateQR(data);
 
       setState(() {
-        validationResult = result.message;
-        isValid = result.isValid;
+        validationResult = result['mensaje'] as String? ?? 'Código procesado';
+        isValid = result['valido'] as bool? ?? false;
         isScanning = false;
       });
 
       animationController.forward(from: 0);
 
       // Registrar acceso
-      await guardRepo.registerAccess(
-        type: 'qr',
-        data: data,
-        authorized: result.isValid,
-        notes: result.data?['details'] as String?,
-      );
+      if (result['valido'] == true && result['tipo'] != null && result['id'] != null) {
+        await guardRepo.registerAccess(
+          qrCode: data,
+          tipo: result['tipo'] as String,
+          id: result['id'] as int,
+        );
+      }
 
       // Mostrar resultado por 4 segundos
       await Future.delayed(const Duration(seconds: 4));

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/admin_repository.dart';
 import '../../../app/theme.dart';
+import 'admin_reservations_page.dart';
+import 'admin_expenses_page.dart';
+import 'admin_announcements_page.dart';
 
 final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final repo = AdminRepository();
@@ -115,7 +118,12 @@ class AdminHomePage extends ConsumerWidget {
                     '${stats['expensas_pendientes']} pendientes, ${stats['expensas_pagadas']} pagadas',
                 count: '${stats['expensas_pendientes']}',
                 color: AppColors.expenses,
-                onTap: () => context.go('/admin/expenses'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminExpensesPage(),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               _ModuleCard(
@@ -222,23 +230,19 @@ class AdminHomePage extends ConsumerWidget {
   }
 
   void _showReservations(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Gestión de Reservas - En desarrollo'),
-        backgroundColor: AppColors.reservations,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AdminReservationsPage(),
       ),
     );
   }
 
   void _showSecurity(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Módulo de Seguridad - En desarrollo'),
-        backgroundColor: AppColors.guard,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AdminAnnouncementsPage(),
       ),
     );
   }

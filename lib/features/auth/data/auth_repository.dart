@@ -1,8 +1,10 @@
 class AuthRepository {
+  // LOGIN SIMPLIFICADO - Solo usuarios mock por ahora
+  // La conexión a PostgreSQL se hará en los otros módulos
   Future<({String access, String refresh, String role})> login(
       {required String email, required String password}) async {
-    // Simulación de login sin PostgreSQL
-    await Future.delayed(const Duration(milliseconds: 500));
+    print('🔐 [LOGIN] Intentando login para: $email');
+    await Future.delayed(const Duration(milliseconds: 300));
 
     // Usuarios de prueba
     final users = {
@@ -15,10 +17,12 @@ class AuthRepository {
     final user = users[email];
 
     if (user == null) {
+      print('❌ [LOGIN] Usuario no encontrado: $email');
       throw Exception('Usuario no encontrado');
     }
 
     if (user['password'] != password) {
+      print('❌ [LOGIN] Contraseña incorrecta');
       throw Exception('Contraseña incorrecta');
     }
 
@@ -31,6 +35,8 @@ class AuthRepository {
     final refreshToken =
         'refresh_${userId}_${DateTime.now().millisecondsSinceEpoch}';
 
+    print('✅ [LOGIN] Login exitoso como $userRole');
+
     return (
       access: accessToken,
       refresh: refreshToken,
@@ -41,5 +47,9 @@ class AuthRepository {
   Future<String?> refresh(String refreshToken) async {
     final userId = refreshToken.split('_')[1];
     return 'access_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> logout() async {
+    print('👋 [LOGOUT] Cerrando sesión');
   }
 }

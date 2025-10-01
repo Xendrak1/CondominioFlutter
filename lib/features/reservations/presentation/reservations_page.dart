@@ -420,44 +420,54 @@ class _CreateReservationSheetState extends State<_CreateReservationSheet> {
                 final tarifa = area['tarifa'];
                 return DropdownMenuItem(
                   value: area['id'] as int,
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(area['nombre'] as String)),
-                      if (requiresPay)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 40),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
                           child: Text(
-                            'Bs. $tarifa',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'GRATIS',
-                            style: TextStyle(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
+                            area['nombre'] as String,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                    ],
+                        const SizedBox(width: 8),
+                        if (requiresPay)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Bs. $tarifa',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'GRATIS',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -466,7 +476,15 @@ class _CreateReservationSheetState extends State<_CreateReservationSheet> {
                   selectedAreaId = value;
                   final area = areas.firstWhere((a) => a['id'] == value);
                   selectedAreaName = area['nombre'];
-                  selectedTarifa = area['tarifa'];
+                  final tarifa = area['tarifa'];
+                  // Convertir tarifa a double seguro
+                  if (tarifa is num) {
+                    selectedTarifa = tarifa.toDouble();
+                  } else if (tarifa is String) {
+                    selectedTarifa = double.tryParse(tarifa);
+                  } else {
+                    selectedTarifa = null;
+                  }
                 });
               },
             ),

@@ -9,7 +9,7 @@ import '../../../common/widgets/empty_state.dart';
 final visitorsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final repo = VisitorsRepository();
-  return await repo.getMyVisitors();
+  return await repo.getVisitors();
 });
 
 class VisitorsPage extends ConsumerWidget {
@@ -66,9 +66,10 @@ class VisitorsPage extends ConsumerWidget {
             itemCount: visitors.length,
             itemBuilder: (context, index) {
               final visitor = visitors[index];
-              final fechaVisita = visitor['fecha_visita'] as DateTime;
-              final yaVisito = fechaVisita.isBefore(DateTime.now());
-              final esHoy = fechaVisita.year == DateTime.now().year &&
+              final fechaVisita = visitor['fecha'] as DateTime?;
+              final yaVisito = fechaVisita?.isBefore(DateTime.now()) ?? false;
+              final esHoy = fechaVisita != null &&
+                  fechaVisita.year == DateTime.now().year &&
                   fechaVisita.month == DateTime.now().month &&
                   fechaVisita.day == DateTime.now().day;
 
@@ -128,7 +129,8 @@ class VisitorsPage extends ConsumerWidget {
                                   size: 14, color: Colors.grey[600]),
                               const SizedBox(width: 4),
                               Text(
-                                fechaVisita.toString().split(' ')[0],
+                                fechaVisita?.toString().split(' ')[0] ??
+                                    'Sin fecha',
                                 style: TextStyle(
                                     fontSize: 13, color: Colors.grey[600]),
                               ),
@@ -401,10 +403,9 @@ class _CreateVisitorSheetState extends State<_CreateVisitorSheet> {
                       try {
                         final repo = VisitorsRepository();
                         final result = await repo.generateVisitorQR(
-                          nombres: nombresCtrl.text,
-                          apellidos: apellidosCtrl.text,
-                          numDoc: numDocCtrl.text,
-                          fechaVisita: fechaVisita,
+                          nombre: '${nombresCtrl.text} ${apellidosCtrl.text}',
+                          documento: numDocCtrl.text,
+                          fecha: fechaVisita,
                         );
 
                         if (context.mounted) {
@@ -466,14 +467,16 @@ class _CreateVisitorSheetState extends State<_CreateVisitorSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${result['nombres']} ${result['apellidos']}',
+                (result['nombre'] as String?) ??
+                    '${result['nombres'] ?? ''} ${result['apellidos'] ?? ''}'
+                        .trim(),
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
-                'CI: ${result['num_doc']}',
+                'CI: ${result['num_doc'] ?? result['documento'] ?? '-'}',
                 style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
@@ -513,11 +516,21 @@ class _CreateVisitorSheetState extends State<_CreateVisitorSheet> {
                   onPressed: () {
                     Share.share(
                       '📱 QR de Visitante - Condominio KE\n\n'
-                      '👤 Nombre: ${result['nombres']} ${result['apellidos']}\n'
-                      '🆔 CI: ${result['num_doc']}\n'
-                      '🔑 Código: ${result['qr_code']}\n'
-                      '📅 Fecha de visita: ${(result['fecha_visita'] as DateTime).toString().split(' ')[0]}\n\n'
-                      '✅ Presentar este QR al guardia para ingresar.',
+                              '👤 Nombre: ' +
+                          ((result['nombre'] as String?) ??
+                              '${result['nombres'] ?? ''} ${result['apellidos'] ?? ''}'
+                                  .trim()) +
+                          '\n'
+                              '🆔 CI: ${result['num_doc'] ?? result['documento'] ?? '-'}\n'
+                              '🔑 Código: ${result['qr_code']}\n'
+                              '📅 Fecha de visita: ' +
+                          (((result['fecha_visita'] as DateTime?) ??
+                                  (result['fecha'] as DateTime?) ??
+                                  DateTime.now())
+                              .toString()
+                              .split(' ')[0]) +
+                          '\n\n'
+                              '✅ Presentar este QR al guardia para ingresar.',
                       subject: 'QR de Visitante',
                     );
                   },
